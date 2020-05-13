@@ -106,14 +106,14 @@ for rows in range(5):
         if hConstraints[rows][cols] != "0":
             queue.append( [rows, cols, hConstraints[rows][cols]] )
 
-#Forward Checking, reducing the domains for each cell using the horizontal and vertical constraints
+#Forward Checking, reducing the domains for each cell using the horizontal and vertical values
 for row in range(5):
     for col in range(5):
         reduceVDomain(row,col)
         reduceHDomain(row,col)
 
 #Forward Checking with the vertical and horizontal constraints
-#Reducing based off the queue, add to the queue if a square is changed and has a constraint as well
+#Reducing based off the queue, eliminate appropriate values for every domain
 while len(queue) != 0:
     elem = queue.popleft()
     if elem[2] == ">":
@@ -170,11 +170,6 @@ while len(queue) != 0:
                 tableofDomains[elem[0] + 1][elem[1]].pop(pos)
             else:
                 pos += 1
-for x in range(5):
-    for y in range(5):
-        print(str(x) + "," + str(y) + ":" + str(tableofDomains[x][y]))
-                    
-    #Something about adding the queeue here
                 
 #Back Tracking 
 
@@ -187,8 +182,11 @@ fstream.write(originalFile)
 
 
 #---Test code---
-for x in queue:
-    print(x)
+
+for x in range(5):
+    for y in range(5):
+        print(str(x) + "," + str(y) + ":" + str(tableofDomains[x][y]))
+
 
 """
 fstream.write()
