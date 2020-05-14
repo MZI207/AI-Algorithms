@@ -52,27 +52,7 @@ for row in range(5):
             tableofDomains[row].append([ initialNums[row][col] ] )
         else:
             tableofDomains[row].append([1,2,3,4,5])
-"""
-Could remove
-#Returns true if every element in the row is different, otherwise False
-def rowDif(row):
-    rowVals = []
-    for col in range(5):
-        if initialNums[row][col] in rowVals:
-            return False
-        rowvals.append(initialNums[row][col])
-    return True
 
-#Return true if every element in the column is different, otherwise False
-def colDif(col):
-    colVals = []
-    for row in range(5):
-        if initialNums[row][col] in colVals:
-            return False
-        colvals.append(initialNums[row][col])
-    return True
-
-"""
 #Changes the domain of the cell based on the vertical values
 def reduceVDomain(row, col):
     if len(tableofDomains[row][col]) == 1:
@@ -116,6 +96,7 @@ for row in range(5):
 #Reducing based off the queue, eliminate appropriate values for every domain
 while len(queue) != 0:
     elem = queue.popleft()
+    #Insert an error message saying how the constraints make the problem impossible here
     if elem[2] == ">":
         pos = 0
         while pos < len(tableofDomains[elem[0]] [elem[1]]):
@@ -151,7 +132,6 @@ while len(queue) != 0:
                 pos += 1
         pos = 0
         while pos < len(tableofDomains[elem[0] + 1][elem[1]]):
-            print(tableofDomains[elem[0]][elem[1]])
             if  tableofDomains[elem[0] + 1][elem[1]][pos] <= tableofDomains[elem[0]][elem[1]][0]:
                 tableofDomains[elem[0] + 1][elem[1]].pop(pos)
             else:
@@ -165,14 +145,108 @@ while len(queue) != 0:
                 pos += 1
         pos = 0
         while pos < len(tableofDomains[elem[0] + 1][elem[1]]):
-            print(tableofDomains[elem[0]][elem[1]])
             if  tableofDomains[elem[0] + 1][elem[1]][pos] >= tableofDomains[elem[0]][elem[1]][-1]:
                 tableofDomains[elem[0] + 1][elem[1]].pop(pos)
             else:
                 pos += 1
-                
-#Back Tracking 
 
+
+#Returns true if every element in the row is different, otherwise False
+def rowDif(row, world):
+    rowVals = []
+    for col in range(5):
+        if world[row][col] in rowVals or world[row][col] == 0:
+            return False
+        rowvals.append(world[row][col])
+    return True
+
+#Return true if every element in the column is different, otherwise False
+def colDif(col, world):
+    colVals = []
+    for row in range(5):
+        if world[row][col] in colVals or world[row][col] == 0:
+            return False
+        colvals.append(world[row][col])
+    return True
+
+#Used to check if the nums have worked and are correct
+def check(world):
+    for x in range(5):
+        if not colDif(x, world):
+            return False
+        if not rowDif(x, world):
+            return False
+    return True
+
+#Setting up backtracking 
+
+
+class Node:
+    def __init__(self, domain, parent, children):
+        self.domain = domain
+        self.parent = parent
+        self.children = children
+        self.world = []
+        for x in range(5):
+            self.world.append([])
+            for y in range(5):
+                if len(domain[x][y]) == 1:
+                    self.world[x].append(domain[x][y][0])
+                else:
+                    self.world[x].append(0)
+        #Determine which cell in the domain has the most contrained variable (Heuristic)
+        self.h = [0,0] #The heuristic holds the coordinates of the most constrained variable
+        row = 0
+        col = 1
+        while row < 5:
+            while col < 5:
+                if len(domain[row][col]) < len( domain[self.h[0]][self.h[1]] ) and len(domain[row][col]) != 1:
+                    self.h = [row, col]
+                elif len(domain[row][col]) == len( domain[self.h[0]][self.h[1]] ) and len(domain[row][col]) != 1:
+                    self.h = self.mostConstrainingVar([row,col], self.h)
+                col += 1
+            row += 1
+            col = 0
+    #Given two coordinates in list form (s.t [row, col]) find the most contraining coordinate
+    def mostConstrainingVar(self, coor1, coor2):
+        coorVal1 = 0
+        coorVal2 = 0
+        #horizontal component
+        for col in range(5):
+            if coor1[1] != col:
+                for val in self.domain[coor1[0]][coor1[1]]:
+                    if val in self.domain[coor1[0]][col]:
+                        coorVal1 += 1
+            if coor2[1] != col:
+                for val in self.domain[coor2[0]][coor2[1]]:
+                    if val in self.domain[coor2[0]][col]:
+                        coorVal2 += 1
+        #vertical component
+        for row in range(5):
+            if coor1[0] != row:
+                for val in self.domain[coor1[0]][coor1[1]]:
+                    if val in self.domain[row][coor1[1]]:
+                        coorVal1 += 1
+            if coor2[0] != row:
+                for val in self.domain[coor2[0]][coor2[1]]:
+                    if val in self.domain[row][coor2[1]]:
+                        coorVal2 += 1
+        if coorVal1 >= coorVal2:
+            return coor1
+        return coor2
+
+nodes = []
+nodesExplored = []
+currNode = Node(tableofDomains, None, [])
+#Backtracking
+"""
+while True:
+    if check(currNode.world):
+        break
+    else:
+        print("hello")
+        break
+"""
 #Setting up the output file
 outputFileName = "OutputOf" + filename
 fstream = open(outputFileName, "w+")
@@ -186,8 +260,3 @@ fstream.write(originalFile)
 for x in range(5):
     for y in range(5):
         print(str(x) + "," + str(y) + ":" + str(tableofDomains[x][y]))
-
-
-"""
-fstream.write()
-"""
