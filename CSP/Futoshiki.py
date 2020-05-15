@@ -1,6 +1,8 @@
 #Mohammed Iqbal
 #Mzi207
 from collections import deque
+import copy
+
 initialNums = [] 
 hConstraints = [] # Horinzontal COnstraint
 vConstraints = [] # Vertical Constraint
@@ -96,7 +98,6 @@ for row in range(5):
 #Reducing based off the queue, eliminate appropriate values for every domain
 while len(queue) != 0:
     elem = queue.popleft()
-    #Insert an error message saying how the constraints make the problem impossible here
     if elem[2] == ">":
         pos = 0
         while pos < len(tableofDomains[elem[0]] [elem[1]]):
@@ -150,6 +151,18 @@ while len(queue) != 0:
             else:
                 pos += 1
 
+#Determines if the domains are possible
+def domainCheck(domain):
+    print "new Domain"
+    for x in domain:
+        for y in x:
+            print y
+            if len(y) == 0:
+                return False
+    return True
+#Create output file for this situation later
+if not domainCheck(tableofDomains):
+    print "Error"
 
 #Returns true if every element in the row is different, otherwise False
 def rowDif(row, world):
@@ -157,7 +170,7 @@ def rowDif(row, world):
     for col in range(5):
         if world[row][col] in rowVals or world[row][col] == 0:
             return False
-        rowvals.append(world[row][col])
+        rowVals.append(world[row][col])
     return True
 
 #Return true if every element in the column is different, otherwise False
@@ -166,7 +179,7 @@ def colDif(col, world):
     for row in range(5):
         if world[row][col] in colVals or world[row][col] == 0:
             return False
-        colvals.append(world[row][col])
+        colVals.append(world[row][col])
     return True
 
 #Used to check if the nums have worked and are correct
@@ -179,14 +192,13 @@ def check(world):
     return True
 
 #Setting up backtracking 
-
-
 class Node:
     def __init__(self, domain, parent, children):
         self.domain = domain
         self.parent = parent
         self.children = children
         self.world = []
+        self.check = False #Determines if all the children in this Node has been checked and if so set as True 
         for x in range(5):
             self.world.append([])
             for y in range(5):
@@ -238,14 +250,40 @@ class Node:
 nodes = []
 nodesExplored = []
 currNode = Node(tableofDomains, None, [])
+
 #Backtracking
-"""
-while True:
-    if check(currNode.world):
-        break
+while check(currNode.world) == False:
+    if not currNode.check:
+        for vals in currNode.domain[currNode.h[0]][currNode.h[1]]:
+            tempDomain = copy.deepcopy(currNode.domain)
+            for pos in range(5):
+                #Update the horizontal components of the domain based of vals
+                if pos != currNode.h[1] and vals in tempDomain[currNode.h[0]][pos]:
+                    tempDomain[currNode.h[0]][pos].pop(tempDomain[currNode.h[0]][pos].index(vals))
+                #Update the vertical components of the domain based of vals
+                if pos != currNode.h[0] and vals in tempDomain[pos][currNode.h[1]]:
+                    tempDomain[pos][currNode.h[1]].pop(tempDomain[pos][currNode.h[1]].index(vals))
+            tempDomain[currNode.h[0]][currNode.h[1]] = [vals]
+            #Determine if the node is possible based on the domains, if so add it to the children
+            if domainCheck(tempDomain):
+                currNode.children.append(Node(tempDomain, currNode, []))
+                print check(currNode.children[-1].world)
+        if len(currNode.children) == 0:
+            currNode.parent.children.pop(currNode.parent.children.index(currNode))
+            currNode = currNode.parent
+            if len(currNode.children) == 0:
+                currNode.check = True
+        else:
+            currNode = currNode.children[0]
     else:
-        print("hello")
-        break
+        currNode.parent.children.pop(currNode.parent.children.index(currNode))
+        currNode = currnode.parent
+
+for pos in currNode.children:
+    for x in range(5):
+        for y in range(5):
+            print(str(x) + "," + str(y) + ":" + str(pos.domain[x][y]))
+
 """
 #Setting up the output file
 outputFileName = "OutputOf" + filename
@@ -260,3 +298,4 @@ fstream.write(originalFile)
 for x in range(5):
     for y in range(5):
         print(str(x) + "," + str(y) + ":" + str(tableofDomains[x][y]))
+"""
