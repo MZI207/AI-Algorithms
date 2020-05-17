@@ -57,23 +57,19 @@ for row in range(5):
 
 #Changes the domain of the cell based on the vertical values
 def reduceVDomain(row, col):
-    if len(tableofDomains[row][col]) == 1:
-        return
     vList = []
     for x in range(5):
-        vList.append(initialNums[x][col])
-    for x in vList:
-        if x in tableofDomains[row][col]:
-            tableofDomains[row][col].pop(tableofDomains[row][col].index(x))
-    return
+        if x != row:
+            vList.append(initialNums[x][col])
+    for x in range(len(vList)):
+        if vList[x] in tableofDomains[row][col]:
+            tableofDomains[row][col].pop(tableofDomains[row][col].index(vList[x]))
 
 #Changes the domain of the cell based on the horizontal values
 def reduceHDomain(row, col):
-    if len(tableofDomains[row][col]) == 1:
-        return
-    for x in initialNums[row]:
-        if x in tableofDomains[row][col]:
-            tableofDomains[row][col].pop(tableofDomains[row][col].index(x))
+    for x in range(len(initialNums[row])):
+        if initialNums[row][x] in tableofDomains[row][col] and x != col:
+            tableofDomains[row][col].pop(tableofDomains[row][col].index(initialNums[row][x]))
     return 0
 
 queue = deque()
@@ -81,12 +77,20 @@ queue = deque()
 for rows in range(4):
     for cols in range(5):
         if vConstraints[rows][cols] != "0":
-            queue.append([rows,cols, vConstraints[rows][cols]] )
+            queue.append([rows,cols, vConstraints[rows][cols], "down"] )
+            if vConstraints[rows][cols] == "^":
+                queue.append([rows + 1, cols, "v", "up"])
+            else:
+                queue.append([rows+1, cols, "^", "up"]) 
 #Adding the horinzontal components to the queue
 for rows in range(5):
     for cols in range(4):
         if hConstraints[rows][cols] != "0":
-            queue.append( [rows, cols, hConstraints[rows][cols]] )
+            queue.append( [rows, cols, hConstraints[rows][cols], "right"] )
+            if hConstraints[rows][cols] == "<":
+                queue.append( [rows, cols + 1, ">", "left"] )
+            else:
+                queue.append([rows, cols + 1, "<", "left"])
 
 #Forward Checking, reducing the domains for each cell using the horizontal and vertical values
 for row in range(5):
@@ -94,94 +98,124 @@ for row in range(5):
         reduceVDomain(row,col)
         reduceHDomain(row,col)
 
+#Determines if it the futoshiki is possible based on the vertical numbers and horiziontal numbers
+def domainCheck(domain):
+    for x in domain:
+        for y in x:
+            if len(y) == 0:
+                return False
+    return True
+possible = domainCheck(tableofDomains)
+previousConstraints = []
+#use the CP3 ALGO
 #Forward Checking with the vertical and horizontal constraints
 #Reducing based off the queue, eliminate appropriate values for every domain
-while len(queue) != 0:
+while len(queue) != 0 and possible:
+    change = False
     elem = queue.popleft()
     if elem[2] == ">":
         pos = 0
         while pos < len(tableofDomains[elem[0]] [elem[1]]):
-            if  tableofDomains[elem[0]][elem[1]][pos] <= tableofDomains[elem[0]][elem[1] + 1][0]:
+            if  elem[3] == "right" and tableofDomains[elem[0]][elem[1]][pos] <= tableofDomains[elem[0]][elem[1] + 1][0]:
                 tableofDomains[elem[0]][elem[1]].pop(pos)
-            else:
-                pos += 1
-        pos = 0
-        while pos < len(tableofDomains[elem[0]][elem[1] + 1]):
-            if  tableofDomains[elem[0]][elem[1] + 1][pos] >= tableofDomains[elem[0]][elem[1]][-1]:
-                tableofDomains[elem[0]][elem[1] + 1].pop(pos)
+                change = True
+            elif elem[3] == "left" and tableofDomains[elem[0]][elem[1]][pos] <= tableofDomains[elem[0]][elem[1] - 1][0]:
+                tableofDomains[elem[0]][elem[1]].pop(pos)
+                change = True
             else:
                 pos += 1
     elif elem[2] == "<":
         pos = 0
         while pos < len(tableofDomains[elem[0]] [elem[1]]):
-            if  tableofDomains[elem[0]][elem[1]][pos] >= tableofDomains[elem[0]][elem[1] + 1][-1]:
+            if  elem[3] == "right" and tableofDomains[elem[0]][elem[1]][pos] >= tableofDomains[elem[0]][elem[1] + 1][-1]:
                 tableofDomains[elem[0]][elem[1]].pop(pos)
-            else:
-                pos += 1
-        pos = 0
-        while pos < len(tableofDomains[elem[0]][elem[1] + 1]):
-            if  tableofDomains[elem[0]][elem[1] + 1][pos] <= tableofDomains[elem[0]][elem[1]][0]:
-                tableofDomains[elem[0]][elem[1] + 1].pop(pos)
+                change = True
+            elif elem[3] == "left" and tableofDomains[elem[0]][elem[1]][pos] >= tableofDomains[elem[0]][elem[1] - 1][-1]:
+                tableofDomains[elem[0]][elem[1]].pop(pos)
+                change = True
             else:
                 pos += 1
     elif elem[2] == "^":
         pos = 0
         while pos < len(tableofDomains[elem[0]] [elem[1]]):
-            if  tableofDomains[elem[0]][elem[1]][pos] >= tableofDomains[elem[0] + 1][elem[1]][-1]:
+            if  elem[3] == "down" and tableofDomains[elem[0]][elem[1]][pos] >= tableofDomains[elem[0] + 1][elem[1]][-1]:
                 tableofDomains[elem[0]][elem[1]].pop(pos)
+                change = True
+            elif elem[3] == "up" and tableofDomains[elem[0]][elem[1]][pos] >= tableofDomains[elem[0] - 1][elem[1]][-1]:
+                tableofDomains[elem[0]][elem[1]].pop(pos)
+                change = True 
             else:
                 pos += 1
         pos = 0
-        while pos < len(tableofDomains[elem[0] + 1][elem[1]]):
-            if  tableofDomains[elem[0] + 1][elem[1]][pos] <= tableofDomains[elem[0]][elem[1]][0]:
-                tableofDomains[elem[0] + 1][elem[1]].pop(pos)
-            else:
-                pos += 1
     elif elem[2] == "v":
         pos = 0
         while pos < len(tableofDomains[elem[0]] [elem[1]]):
-            if  tableofDomains[elem[0]][elem[1]][pos] <= tableofDomains[elem[0] + 1][elem[1]][0]:
+            if  elem[3] == "down" and tableofDomains[elem[0]][elem[1]][pos] <= tableofDomains[elem[0] + 1][elem[1]][0]:
                 tableofDomains[elem[0]][elem[1]].pop(pos)
+                change = True
+            elif elem[3] == "up" and tableofDomains[elem[0]][elem[1]][pos] <= tableofDomains[elem[0] - 1][elem[1]][0]:
+                tableofDomains[elem[0]][elem[1]].pop(pos)
+                change = True
             else:
                 pos += 1
-        pos = 0
-        while pos < len(tableofDomains[elem[0] + 1][elem[1]]):
-            if  tableofDomains[elem[0] + 1][elem[1]][pos] >= tableofDomains[elem[0]][elem[1]][-1]:
-                tableofDomains[elem[0] + 1][elem[1]].pop(pos)
-            else:
-                pos += 1
+    if change:
+        for x in previousConstraints:
+            if (elem[0] == x[0] and x[1] == elem[1] - 1) or \
+            (elem[0] == x[0] and x[1] == elem[1] + 1) or \
+            (x[0] == elem[0] + 1 and x[1] == elem[1]) or \
+            (x[0] == elem[1] - 1 and x[1] == elem[1]):
+                queue.append(x)
+        for x in range(5):
+            for y in range(5):
+                if len(tableofDomains[x][y]) == 1 and initialNums[x][y] == 0:
+                    initialNums[x][y] = tableofDomains[x][y][0]
+                    #Updating horizontal 
+                    for col in range(5):
+                        if tableofDomains[x][y][0] in tableofDomains[x][col] and col != y:
+                            tableofDomains[x][col].pop(tableofDomains[x][col].index(tableofDomains[x][y][0]))
+                            for prev in previousConstraints:
+                                if prev[0] == x and prev[1] == col:
+                                    queue.append(prev)
+                    #Updating Vertical:
+                    for row in range(5):
+                        if tableofDomains[x][y][0] in tableofDomains[row][y] and row != x:
+                            tableofDomains[row][y].pop(tableofDomains[row][y].index(tableofDomains[x][y][0]))
+                            for prev in previousConstraints:
+                                if prev[0] == x and prev[1] == col:
+                                    queue.append(prev)
+    previousConstraints.append(elem)
+    
 
 #Determines if the domains are possible
-def domainCheck(domain):
-    print "new Domain"
-    for x in domain:
-        for y in x:
-            print y
-            if len(y) == 0:
-                return False
-    return True
-#Create output file for this situation later
-if not domainCheck(tableofDomains):
-    print "Error"
+possible = domainCheck(tableofDomains)
 
 #Returns true if every element in the row is different, otherwise False
 def rowDif(row, world):
     rowVals = []
     for col in range(5):
-        if world[row][col] in rowVals or world[row][col] == 0:
+        if world[row][col] in rowVals:
             return False
-        rowVals.append(world[row][col])
+        if world[row][col] != 0:
+            rowVals.append(world[row][col])
     return True
 
 #Return true if every element in the column is different, otherwise False
 def colDif(col, world):
     colVals = []
     for row in range(5):
-        if world[row][col] in colVals or world[row][col] == 0:
+        if world[row][col] in colVals:
             return False
-        colVals.append(world[row][col])
+        if world[row][col] != 0:
+            colVals.append(world[row][col])
     return True
 
+def alldif(world):
+    for x in range(5):
+        if not colDif(x, world):
+            return False
+        if not rowDif(x, world):
+            return False
+    return True
 #Used to check if the nums have worked and are correct
 def check(world):
     for x in range(5):
@@ -189,6 +223,11 @@ def check(world):
             return False
         if not rowDif(x, world):
             return False
+    for x in range(5):
+        for y in range(5):
+            if world[x][y] == 0:
+                
+                return False
     return True
 
 #Setting up backtracking 
@@ -212,7 +251,9 @@ class Node:
         col = 1
         while row < 5:
             while col < 5:
-                if len(domain[row][col]) < len( domain[self.h[0]][self.h[1]] ) and len(domain[row][col]) != 1:
+                if len( domain[self.h[0]][self.h[1]] )== 1:
+                    self.h = [row, col]
+                elif (len(domain[row][col]) < len( domain[self.h[0]][self.h[1]] ) and len(domain[row][col]) != 1):
                     self.h = [row, col]
                 elif len(domain[row][col]) == len( domain[self.h[0]][self.h[1]] ) and len(domain[row][col]) != 1:
                     self.h = self.mostConstrainingVar([row,col], self.h)
@@ -252,50 +293,58 @@ nodesExplored = []
 currNode = Node(tableofDomains, None, [])
 
 #Backtracking
-while check(currNode.world) == False:
-    if not currNode.check:
+while check(currNode.world) == False and possible:
+    if currNode.check == False:
         for vals in currNode.domain[currNode.h[0]][currNode.h[1]]:
             tempDomain = copy.deepcopy(currNode.domain)
-            for pos in range(5):
-                #Update the horizontal components of the domain based of vals
-                if pos != currNode.h[1] and vals in tempDomain[currNode.h[0]][pos]:
-                    tempDomain[currNode.h[0]][pos].pop(tempDomain[currNode.h[0]][pos].index(vals))
-                #Update the vertical components of the domain based of vals
-                if pos != currNode.h[0] and vals in tempDomain[pos][currNode.h[1]]:
-                    tempDomain[pos][currNode.h[1]].pop(tempDomain[pos][currNode.h[1]].index(vals))
             tempDomain[currNode.h[0]][currNode.h[1]] = [vals]
+            updatequeue = deque()
+            updatequeue.append( [ currNode.h[0], currNode.h[1], vals ] ) #Adding to what needs to be updated in the queue with (row, col, val)
+            while len(updatequeue) != 0:
+                if domainCheck(tempDomain) == False:
+                    break
+                elem = updatequeue.popleft()
+                for pos in range(5):
+                    #Update the horizontal components of the domain based of vals
+                    if pos != elem[1] and elem[2] in tempDomain[elem[0]][pos]:
+                        tempDomain[elem[0]][pos].pop(tempDomain[elem[0]][pos].index(elem[2]))
+                        if currNode.world[elem[0]][pos] == 0 and len(tempDomain[elem[0]][pos]) == 1:
+                            updatequeue.append( [elem[0], pos, tempDomain[elem[0]][pos][0] ] )
+                    #Update the vertical components of the domain based of vals
+                    if pos != elem[0] and elem[2] in tempDomain[pos][elem[1]]:
+                        tempDomain[pos][elem[1]].pop(tempDomain[pos][elem[1]].index(elem[2]))
+                        if currNode.world[pos][elem[1]] == 0 and len(tempDomain[pos][elem[1]] )  == 1:
+                            updatequeue.append( [pos, elem[1], tempDomain[pos][elem[1]][0] ] ) 
             #Determine if the node is possible based on the domains, if so add it to the children
-            if domainCheck(tempDomain):
+            tempNode = Node(tempDomain, currNode, [])
+            if domainCheck(tempDomain) and alldif(tempNode.world):
                 currNode.children.append(Node(tempDomain, currNode, []))
-                print check(currNode.children[-1].world)
+        #backtrack to the parent node        
         if len(currNode.children) == 0:
             currNode.parent.children.pop(currNode.parent.children.index(currNode))
             currNode = currNode.parent
             if len(currNode.children) == 0:
                 currNode.check = True
+            else:
+                currNode = currNode.children[0]
         else:
             currNode = currNode.children[0]
     else:
         currNode.parent.children.pop(currNode.parent.children.index(currNode))
-        currNode = currnode.parent
+        currNode = currNode.parent
 
-for pos in currNode.children:
-    for x in range(5):
-        for y in range(5):
-            print(str(x) + "," + str(y) + ":" + str(pos.domain[x][y]))
-
-"""
 #Setting up the output file
 outputFileName = "OutputOf" + filename
+if "Input" in filename:
+    outputFileName = filename.replace("Input", "Output")
 fstream = open(outputFileName, "w+")
-fstream.write(originalFile)
-
-
-
-
-#---Test code---
-
-for x in range(5):
-    for y in range(5):
-        print(str(x) + "," + str(y) + ":" + str(tableofDomains[x][y]))
-"""
+result = ""
+if possible:
+    for x in currNode.world:
+        for y in x:
+            result += str(y) + " "
+        result += "\n"
+else:
+    result = "The Futoshiki is not possible given the constraints"
+fstream.write(result)
+fstream.close()
